@@ -4,13 +4,17 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.coupon.common.BusinessException;
 import com.campus.coupon.common.PageResponse;
+import com.campus.coupon.coupon.constant.CouponRedisKeys;
 import com.campus.coupon.template.dto.TemplateCreateRequest;
 import com.campus.coupon.template.dto.TemplateResponse;
 import com.campus.coupon.template.entity.CouponTemplate;
 import com.campus.coupon.template.mapper.CouponTemplateMapper;
 import com.campus.coupon.template.service.CouponTemplateService;
 import jakarta.annotation.Resource;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -21,6 +25,9 @@ import java.util.stream.Collectors;
 public class CouponTemplateServiceImpl implements CouponTemplateService {
     @Resource
     private CouponTemplateMapper couponTemplateMapper;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
 
     @Override
     public String createTemplate(TemplateCreateRequest request){
@@ -39,6 +46,18 @@ public class CouponTemplateServiceImpl implements CouponTemplateService {
         template.setCreatedAt(LocalDateTime.now());
 
         couponTemplateMapper.insert(template);
+        //在数据库操作完成且成功后进行redis插入，避免数据库提交失败回滚而redis提交成功造成的数据差异
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit(){
+                        stringRedisTemplate.opsForValue().set(
+                                CouponRedisKeys.stockKey(template.getId()),
+                                String.valueOf(template.getTotalQuantity())
+                        );
+                    }
+                }
+        );
         return template.getTemplateNo();
     }
 
