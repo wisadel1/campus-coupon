@@ -16,7 +16,7 @@ public class UserCoupon {
     private Long templateId;
     private Long userId;
     private Integer status;
-    private Long orderId;
+    private String orderNo;
     private LocalDateTime receivedTime;
     private LocalDateTime expireTime;
 }

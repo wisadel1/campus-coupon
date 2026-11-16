@@ -1,6 +1,7 @@
 package com.campus.coupon.coupon.task;
 
 import com.campus.coupon.coupon.constant.CouponRedisKeys;
+import com.campus.coupon.coupon.mapper.UserCouponMapper;
 import com.campus.coupon.template.entity.CouponTemplate;
 import com.campus.coupon.template.mapper.CouponTemplateMapper;
 import jakarta.annotation.Resource;
@@ -20,6 +21,8 @@ public class CouponReconcileTask {
     @Resource
     private StringRedisTemplate stringRedisTemplate;
 
+
+    // TODO:此处检查应当设置一个时间点，对账检查过去的发放操作中mysql与redis是否保持一致，其次应当对当前余量进行检查，此时异常应当出现于初始化或者回溯，需要人工调整
     @Scheduled(fixedDelay = 5 * 60 * 1000)
     private void reconcile(){
         List<CouponTemplate> templates = couponTemplateMapper.selectList(null);
