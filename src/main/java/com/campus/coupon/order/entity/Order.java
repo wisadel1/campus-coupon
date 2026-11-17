@@ -22,4 +22,5 @@ public class Order {
     private LocalDateTime createdAt;
     private LocalDateTime paidAt;
     private LocalDateTime cancelledAt;
+    private LocalDateTime expireTime;
 }

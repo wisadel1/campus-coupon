@@ -32,4 +32,14 @@ public class OrderController {
     public Result<OrderResponse> detail(@PathVariable String orderNo){
         return Result.success(orderService.getByOrderNo(orderNo));
     }
+
+    @GetMapping("/pay/callback")
+    public Result<String> payCallback(@RequestParam String orderNo){
+        return Result.success(orderService.handlePayCallback(orderNo));
+    }
+
+    @PostMapping("/cancel")
+    public Result<Boolean> cancelOrder(@RequestParam String orderNo, String reason){
+        return Result.success(orderService.cancelOrder(orderNo, reason));
+    }
 }
