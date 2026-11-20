@@ -20,6 +20,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import org.springframework.beans.factory.annotation.Value;
+
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -35,6 +37,9 @@ public class CouponTemplateServiceImpl implements CouponTemplateService {
 
     @Resource
     private StringRedisTemplate stringRedisTemplate;
+
+    @Value("${app.cache.template-detail-enabled:true}")
+    private boolean templateDetailCacheEnabled;
 
     @Override
     public String createTemplate(TemplateCreateRequest request){
@@ -69,28 +74,40 @@ public class CouponTemplateServiceImpl implements CouponTemplateService {
     }
 
     @Override
-    public TemplateResponse getByTemplateNo(String templateNo){
+    public TemplateResponse getByTemplateNo(String templateNo) {
+
         String key = TemplateRedisKeys.detailKey(templateNo);
 
-        String cached = stringRedisTemplate.opsForValue().get(key);
-        if(cached != null){
-            return JSON.parseObject(cached, TemplateResponse.class);
+        // 1. 开启缓存时，先查询 Redis
+        if (templateDetailCacheEnabled) {
+            String cached = stringRedisTemplate.opsForValue().get(key);
+
+            if (cached != null) {
+                return JSON.parseObject(cached, TemplateResponse.class);
+            }
         }
 
+        // 2. 查询数据库
         CouponTemplate template = couponTemplateMapper.selectOne(
                 new LambdaQueryWrapper<CouponTemplate>()
                         .eq(CouponTemplate::getTemplateNo, templateNo)
         );
-        if(template == null){
+
+        if (template == null) {
             throw new BusinessException(1001, "模板不存在");
         }
 
         TemplateResponse response = toResponse(template);
-        stringRedisTemplate.opsForValue().set(
-                key,
-                JSON.toJSONString(response),
-                Duration.ofMinutes(10)
-        );
+
+        // 3. 只有开启缓存时，才写入 Redis
+        if (templateDetailCacheEnabled) {
+            stringRedisTemplate.opsForValue().set(
+                    key,
+                    JSON.toJSONString(response),
+                    Duration.ofMinutes(10)
+            );
+        }
+
         return response;
     }
 
@@ -103,6 +120,8 @@ public class CouponTemplateServiceImpl implements CouponTemplateService {
 
         return PageResponse.of(result.getTotal(), result.getCurrent(), result.getSize(), records);
     }
+
+
 
     @Override
     @Transactional

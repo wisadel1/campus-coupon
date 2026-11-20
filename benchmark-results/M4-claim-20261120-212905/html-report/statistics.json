@@ -1,0 +1,34 @@
+{
+  "Total" : {
+    "transaction" : "Total",
+    "sampleCount" : 500,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 8.389999999999997,
+    "medianResTime" : 4.0,
+    "minResTime" : 2.0,
+    "maxResTime" : 180.0,
+    "pct1ResTime" : 8.900000000000034,
+    "pct2ResTime" : 13.949999999999989,
+    "pct3ResTime" : 179.0,
+    "throughput" : 267.6659528907923,
+    "receivedKBytesPerSec" : 59.85888985546038,
+    "sentKBytesPerSec" : 68.22345088329764
+  },
+  "POST Coupon Claim" : {
+    "transaction" : "POST Coupon Claim",
+    "sampleCount" : 500,
+    "errorCount" : 0,
+    "errorPct" : 0.0,
+    "meanResTime" : 8.389999999999997,
+    "medianResTime" : 4.0,
+    "minResTime" : 2.0,
+    "maxResTime" : 180.0,
+    "pct1ResTime" : 8.900000000000034,
+    "pct2ResTime" : 13.949999999999989,
+    "pct3ResTime" : 179.0,
+    "throughput" : 267.6659528907923,
+    "receivedKBytesPerSec" : 59.85888985546038,
+    "sentKBytesPerSec" : 68.22345088329764
+  }
+}

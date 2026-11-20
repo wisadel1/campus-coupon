@@ -1,0 +1,14 @@
+Scenario: M4-claim
+Started: 20261120-212905
+BaseUrl: http://localhost:8080
+Endpoint: POST /api/coupon/claim
+TemplateNo: T17944847648807575
+Threads: 100
+RampUpSeconds: 2
+LoopsPerThread: 5
+ExpectedRequests: 500
+UserIdRange: 1001 - 1500
+JMeterExitCode: 0
+JTL: .\benchmark-results\M4-claim-20261120-212905\results.jtl
+HTMLReport: .\benchmark-results\M4-claim-20261120-212905\html-report
+JMeterLog: .\benchmark-results\M4-claim-20261120-212905\jmeter.log
