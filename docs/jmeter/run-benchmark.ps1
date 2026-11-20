@@ -74,6 +74,10 @@ try {
     $commit = (& git rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw "无法读取 Git commit。" }
 
+    Write-Host "收到的 Jmx 参数：[$Jmx]"
+    Write-Host "参数长度：$($Jmx.Length)"
+    Write-Host "是否绝对路径：$([IO.Path]::IsPathRooted($Jmx))"
+
     $jmxPath = if ([IO.Path]::IsPathRooted($Jmx)) { $Jmx } else { Join-Path $repoRoot $Jmx }
     if (-not (Test-Path $jmxPath)) { throw "找不到 JMX 文件：$jmxPath" }
     $jmxPath = (Resolve-Path $jmxPath).Path
