@@ -10,4 +10,6 @@ public interface CouponTemplateService {
     TemplateResponse getByTemplateNo(String TemplateNo);
 
     PageResponse<TemplateResponse> pageList(Long current, Long size);
+
+    void updateTemplate(String templateNo, TemplateCreateRequest request);
 }

@@ -31,4 +31,11 @@ public class CouponTemplateController {
             @RequestParam(defaultValue = "10") Long size){
         return Result.success(couponTemplateService.pageList(current, size));
     }
+
+    @PutMapping("/{templateNo}")
+    public Result<TemplateResponse> update(@PathVariable String templateNo,
+                                           @Valid @RequestBody TemplateCreateRequest request){
+        couponTemplateService.updateTemplate(templateNo, request);
+        return Result.success();
+    }
 }

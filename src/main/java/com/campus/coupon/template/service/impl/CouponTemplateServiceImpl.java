@@ -1,25 +1,32 @@
 package com.campus.coupon.template.service.impl;
 
+import com.alibaba.fastjson2.JSON;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.campus.coupon.common.BusinessException;
 import com.campus.coupon.common.PageResponse;
 import com.campus.coupon.coupon.constant.CouponRedisKeys;
+import com.campus.coupon.template.constant.TemplateRedisKeys;
 import com.campus.coupon.template.dto.TemplateCreateRequest;
 import com.campus.coupon.template.dto.TemplateResponse;
 import com.campus.coupon.template.entity.CouponTemplate;
 import com.campus.coupon.template.mapper.CouponTemplateMapper;
 import com.campus.coupon.template.service.CouponTemplateService;
 import jakarta.annotation.Resource;
+import org.springframework.cache.Cache;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
+
+
 
 @Service
 public class CouponTemplateServiceImpl implements CouponTemplateService {
@@ -63,13 +70,28 @@ public class CouponTemplateServiceImpl implements CouponTemplateService {
 
     @Override
     public TemplateResponse getByTemplateNo(String templateNo){
+        String key = TemplateRedisKeys.detailKey(templateNo);
+
+        String cached = stringRedisTemplate.opsForValue().get(key);
+        if(cached != null){
+            return JSON.parseObject(cached, TemplateResponse.class);
+        }
+
         CouponTemplate template = couponTemplateMapper.selectOne(
-                new LambdaQueryWrapper<CouponTemplate>().eq(CouponTemplate::getTemplateNo, templateNo)
+                new LambdaQueryWrapper<CouponTemplate>()
+                        .eq(CouponTemplate::getTemplateNo, templateNo)
         );
         if(template == null){
             throw new BusinessException(1001, "模板不存在");
         }
-        return toResponse(template);
+
+        TemplateResponse response = toResponse(template);
+        stringRedisTemplate.opsForValue().set(
+                key,
+                JSON.toJSONString(response),
+                Duration.ofMinutes(10)
+        );
+        return response;
     }
 
     @Override
@@ -80,6 +102,34 @@ public class CouponTemplateServiceImpl implements CouponTemplateService {
         List<TemplateResponse> records = result.getRecords().stream().map(this::toResponse).collect(Collectors.toList());
 
         return PageResponse.of(result.getTotal(), result.getCurrent(), result.getSize(), records);
+    }
+
+    @Override
+    @Transactional
+    public void updateTemplate(String templateNo, TemplateCreateRequest request){
+        CouponTemplate existing = couponTemplateMapper.selectOne(
+                new LambdaQueryWrapper<CouponTemplate>()
+                        .eq(CouponTemplate::getTemplateNo, templateNo)
+        );
+        if(existing == null){
+            throw new BusinessException(1001, "模板不存在");
+        }
+
+        existing.setName(request.getName());
+        existing.setTotalQuantity(request.getTotalQuantity());
+        existing.setValidStart(request.getValidStart());
+        existing.setValidEnd(request.getValidEnd());
+        couponTemplateMapper.updateById(existing);
+
+        //TODO: 这里还有在第一条插入数据库后取出，然后第二条插入，导致缓存与数据库不匹配的问题，并且这里没有对删除缓存失败进行处理
+        TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCommit() {
+                        stringRedisTemplate.delete(TemplateRedisKeys.detailKey(templateNo));
+                    }
+                }
+        );
     }
 
     private TemplateResponse toResponse(CouponTemplate template){
